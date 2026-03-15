@@ -1,0 +1,20 @@
+#!/bin/bash
+# {{script_description}}
+# Outputs JSON for Claude to parse
+
+{{#has_args}}
+{{#args}}
+{{arg_name}}="${{{arg_index}}{{#has_default}}:-{{default_value}}{{/has_default}}}"
+{{/args}}
+{{/has_args}}
+
+# Main logic
+{{main_logic}}
+
+# Output JSON
+echo "{"
+echo "  \"status\": \"success\""
+{{#output_fields}}
+echo "  ,\"{{field_name}}\": \"{{field_value}}\""
+{{/output_fields}}
+echo "}"
