@@ -18,4 +18,5 @@ code-reviews/
 .codex/
 .agents/
 agents/
-design/
+CLAUDE.md
+AGENTS.md
