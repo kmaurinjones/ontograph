@@ -227,13 +227,32 @@ def cmd_add_entity(args: argparse.Namespace) -> None:
     if args.aliases:
         aliases = json.loads(args.aliases)
 
+    file_refs = []
+    if args.file_refs:
+        file_refs = json.loads(args.file_refs)
+
     with OntoDB(args.db) as db:
         entity = db.add_entity(
             name=args.name,
             entity_type=args.type,
             attributes=attributes,
             aliases=aliases,
+            file_refs=file_refs,
         )
+        _print_json(entity)
+
+
+def cmd_attach(args: argparse.Namespace) -> None:
+    """Attach file references to an existing entity."""
+    with OntoDB(args.db) as db:
+        entity = db.attach_files(args.entity, args.files)
+        _print_json(entity)
+
+
+def cmd_detach(args: argparse.Namespace) -> None:
+    """Remove file references from an entity."""
+    with OntoDB(args.db) as db:
+        entity = db.detach_files(args.entity, args.files)
         _print_json(entity)
 
 
@@ -779,7 +798,10 @@ def build_parser() -> argparse.ArgumentParser:
             "  # With aliases (for entity resolution)\n"
             '  ontograph add-entity "Nara Kim" --type person \\\n'
             '    --aliases \'[{"alias": "Nar", "type": "nickname"}, '
-            '{"alias": "N. Kim", "type": "abbreviation"}]\'\n'
+            '{"alias": "N. Kim", "type": "abbreviation"}]\'\n\n'
+            "  # With file references\n"
+            '  ontograph add-entity "laptop receipt" --type document \\\n'
+            '    --file-refs \'["/Users/me/receipts/laptop.pdf"]\'\n'
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -803,7 +825,50 @@ def build_parser() -> argparse.ArgumentParser:
             '{\"alias\": \"name\", \"type\": \"nickname|abbreviation|transcript_error\"}.'
         ),
     )
+    p_add_entity.add_argument(
+        "--file-refs",
+        metavar="JSON",
+        help='File references as a JSON array of paths. Example: \'["/path/to/file.pdf"]\'',
+    )
     p_add_entity.set_defaults(func=cmd_add_entity)
+
+    # ── attach ──
+    p_attach = subparsers.add_parser(
+        "attach",
+        help="Attach file references to an existing entity.",
+        description=(
+            "Link external files (images, PDFs, receipts, contracts, etc.) to an\n"
+            "entity in the knowledge graph. Files stay on disk — only their paths\n"
+            "are stored. These references are surfaced during search and Q&A so the\n"
+            "LLM knows where to find supporting material.\n\n"
+            "Paths are appended without duplicates."
+        ),
+        epilog=(
+            "examples:\n"
+            '  ontograph attach "laptop receipt" /Users/me/receipts/laptop.pdf\n'
+            '  ontograph attach abc123def456 ./photo.jpg ./invoice.pdf\n'
+            '  ontograph attach "contract" /abs/path/contract.pdf /abs/path/amendment.pdf\n'
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_attach.add_argument("entity", help="Entity name or ID.")
+    p_attach.add_argument("files", nargs="+", metavar="FILE", help="File paths to attach.")
+    p_attach.set_defaults(func=cmd_attach)
+
+    # ── detach ──
+    p_detach = subparsers.add_parser(
+        "detach",
+        help="Remove file references from an entity.",
+        description="Remove one or more file references from an entity.",
+        epilog=(
+            "examples:\n"
+            '  ontograph detach "laptop receipt" /Users/me/receipts/laptop.pdf\n'
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_detach.add_argument("entity", help="Entity name or ID.")
+    p_detach.add_argument("files", nargs="+", metavar="FILE", help="File paths to remove.")
+    p_detach.set_defaults(func=cmd_detach)
 
     # ── add-relationship ──
     p_add_rel = subparsers.add_parser(

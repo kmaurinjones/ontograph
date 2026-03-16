@@ -145,6 +145,16 @@ class GraphDB:
     def _init_schema(self) -> None:
         self.conn.executescript(SCHEMA_SQL)
         self.conn.commit()
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Apply schema migrations for backwards compatibility."""
+        # v0.3.0: add file_refs column to entities
+        try:
+            self.conn.execute("ALTER TABLE entities ADD COLUMN file_refs TEXT")
+            self.conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
     def close(self) -> None:
         self.conn.close()
@@ -155,13 +165,26 @@ class GraphDB:
         row = entity.to_row()
         self.conn.execute(
             "INSERT INTO entities "
-            "(id, name, entity_type, attributes, embedding, created_at, updated_at) "
-            "VALUES (:id, :name, :entity_type, :attributes, :embedding, "
-            ":created_at, :updated_at)",
+            "(id, name, entity_type, attributes, file_refs, embedding, "
+            "created_at, updated_at) "
+            "VALUES (:id, :name, :entity_type, :attributes, :file_refs, "
+            ":embedding, :created_at, :updated_at)",
             {**row, "embedding": _serialize_embedding(embedding)},
         )
         self.conn.commit()
         return entity
+
+    def update_entity_file_refs(self, entity_id: str, file_refs: list[str]) -> None:
+        """Update file references for an entity."""
+        import json
+
+        from ontograph.models import _now
+
+        self.conn.execute(
+            "UPDATE entities SET file_refs = ?, updated_at = ? WHERE id = ?",
+            (json.dumps(file_refs), _now(), entity_id),
+        )
+        self.conn.commit()
 
     def get_entity(self, entity_id: str) -> Entity | None:
         row = self.conn.execute(

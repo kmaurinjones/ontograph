@@ -73,6 +73,26 @@ sam = db.get_entity("Sam")
 db.add_alias(sam.id, "Sal", alias_type="transcript_error")
 ```
 
+### File References
+Entities can reference external files — receipts, photos, PDFs, contracts — that live on disk rather than in the database. These references are surfaced during search and Q&A so the LLM knows where to find supporting material.
+
+```python
+# Attach files to an entity
+db.attach_files("kitchen renovation", [
+    "/Users/me/photos/kitchen_before.jpg",
+    "/Users/me/photos/kitchen_after.jpg",
+])
+
+# Or via CLI
+# ontograph attach "kitchen renovation" /Users/me/photos/kitchen_before.jpg
+```
+
+```python
+# When you ask a question, the LLM sees the file references
+answer = db.ask("What photos do we have of the kitchen?")
+# → "There are two referenced photos: kitchen_before.jpg and kitchen_after.jpg at /Users/me/photos/"
+```
+
 ### Schemas
 Ontology schemas define valid entity and relationship types for a domain. They constrain what the LLM extracts.
 
@@ -90,8 +110,35 @@ print(db.stats()["resolution_accuracy"])
 - `.ingest(text, source_type, schema_name, observer_id, metadata) → dict` — Ingest unstructured text
 - `.search(query, limit, graph_depth) → list[dict]` — Hybrid search
 - `.ask(question) → str` — LLM-synthesized answer from graph context
-- `.add_entity(name, entity_type, attributes, aliases) → Entity` — Manual entity creation
+- `.add_entity(name, entity_type, attributes, aliases, file_refs) → Entity` — Manual entity creation
 - `.add_relationship(source, target, type, directed) → Relationship` — Manual relationship creation
+- `.attach_files(entity, file_paths) → Entity` — Attach file references to an entity
+- `.detach_files(entity, file_paths) → Entity` — Remove file references from an entity
 - `.resolve(name, entity_type, observer) → (Entity | None, float)` — Entity resolution
 - `.orbit(observer, limit) → list[dict]` — Proximity-ranked entities
 - `.stats() → dict` — Graph statistics and resolution accuracy
+
+## CLI
+
+```bash
+ontograph --help                  # Full command list
+ontograph ingest --text "..."     # Ingest text
+ontograph search "query"          # Hybrid search
+ontograph ask "question"          # LLM-synthesized answer
+ontograph entities                # List entities
+ontograph attach "entity" file.pdf  # Attach files to entity
+ontograph detach "entity" file.pdf  # Remove file references
+ontograph dashboard               # Interactive graph visualization
+```
+
+## Dashboard
+
+```bash
+ontograph dashboard               # Opens browser at http://127.0.0.1:8484
+ontograph dashboard --port 9000   # Custom port
+ontograph --db project.db dashboard
+```
+
+Interactive force-directed graph visualization. Starts with the most-connected
+entity as hub. Click to select, double-click to expand, drag to reposition,
+scroll to zoom.

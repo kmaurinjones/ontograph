@@ -22,12 +22,18 @@ def _uuid() -> str:
 
 @dataclass
 class Entity:
-    """A node in the knowledge graph. People, projects, topics, orgs — anything nameable."""
+    """A node in the knowledge graph. People, projects, topics, orgs — anything nameable.
+
+    file_refs stores absolute file paths to external files associated with this
+    entity (receipts, images, PDFs, contracts, etc.). These are pointers only —
+    the files themselves live on disk, not in the database.
+    """
 
     name: str
     entity_type: str
     id: str = field(default_factory=_uuid)
     attributes: dict = field(default_factory=dict)
+    file_refs: list[str] = field(default_factory=list)
     created_at: str = field(default_factory=_now)
     updated_at: str = field(default_factory=_now)
 
@@ -37,17 +43,20 @@ class Entity:
             "name": self.name,
             "entity_type": self.entity_type,
             "attributes": json.dumps(self.attributes),
+            "file_refs": json.dumps(self.file_refs),
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
 
     @classmethod
     def from_row(cls, row: dict) -> Entity:
+        file_refs_raw = row["file_refs"] if "file_refs" in dict(row) else None
         return cls(
             id=row["id"],
             name=row["name"],
             entity_type=row["entity_type"],
             attributes=json.loads(row["attributes"]) if row["attributes"] else {},
+            file_refs=json.loads(file_refs_raw) if file_refs_raw else [],
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )

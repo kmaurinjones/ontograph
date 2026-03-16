@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-15
+
+### Added
+- File references on entities (`file_refs`) — attach external files (PDFs, images, receipts) to entities without storing binary data in the DB
+- `ontograph attach` CLI command — link files to entities by name or ID
+- `ontograph detach` CLI command — remove file references from entities
+- `--file-refs` flag on `add-entity` for creating entities with file references
+- File references surfaced in search context so the LLM can reference them in answers
+- File references shown in dashboard sidebar
+- Auto-migration for existing databases (adds `file_refs` column)
+- Home renovation example (`examples/home_renovation.py`) demonstrating file references
+- 9 new tests for file references (model, DB, CLI)
+
 ## [0.2.0] - 2026-03-15
 
 ### Added

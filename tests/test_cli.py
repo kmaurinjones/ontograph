@@ -335,6 +335,79 @@ class TestAddAliasCommand:
             assert exc_info.value.code == 1
 
 
+# ── Attach / Detach ──
+
+
+class TestAttachDetach:
+    def test_attach_files(self, populated_db: str, capsys: pytest.CaptureFixture) -> None:
+        with patch(
+            "sys.argv",
+            [
+                "ontograph", "--db", populated_db, "attach",
+                "Lena", "/abs/path/photo.jpg", "/abs/path/doc.pdf",
+            ],
+        ):
+            main()
+        output = json.loads(capsys.readouterr().out)
+        assert output["file_refs"] == '["/abs/path/photo.jpg", "/abs/path/doc.pdf"]'
+
+    def test_attach_no_duplicates(self, populated_db: str, capsys: pytest.CaptureFixture) -> None:
+        # Attach once
+        with patch(
+            "sys.argv",
+            ["ontograph", "--db", populated_db, "attach", "Lena", "/path/a.pdf"],
+        ):
+            main()
+        capsys.readouterr()
+
+        # Attach again with overlap
+        with patch(
+            "sys.argv",
+            ["ontograph", "--db", populated_db, "attach", "Lena", "/path/a.pdf", "/path/b.pdf"],
+        ):
+            main()
+        output = json.loads(capsys.readouterr().out)
+        assert output["file_refs"] == '["/path/a.pdf", "/path/b.pdf"]'
+
+    def test_detach_files(self, populated_db: str, capsys: pytest.CaptureFixture) -> None:
+        # Attach first
+        with patch(
+            "sys.argv",
+            ["ontograph", "--db", populated_db, "attach", "Dev", "/x.pdf", "/y.png"],
+        ):
+            main()
+        capsys.readouterr()
+
+        # Detach one
+        with patch(
+            "sys.argv",
+            ["ontograph", "--db", populated_db, "detach", "Dev", "/x.pdf"],
+        ):
+            main()
+        output = json.loads(capsys.readouterr().out)
+        assert output["file_refs"] == '["/y.png"]'
+
+    def test_entity_shows_file_refs(
+        self, populated_db: str, capsys: pytest.CaptureFixture
+    ) -> None:
+        # Attach a file
+        with patch(
+            "sys.argv",
+            ["ontograph", "--db", populated_db, "attach", "Lena", "/ref.pdf"],
+        ):
+            main()
+        capsys.readouterr()
+
+        # Get entity — should include file_refs
+        with patch(
+            "sys.argv",
+            ["ontograph", "--db", populated_db, "entity", "Lena"],
+        ):
+            main()
+        output = json.loads(capsys.readouterr().out)
+        assert "file_refs" in output
+
+
 # ── Ingest input validation ──
 
 

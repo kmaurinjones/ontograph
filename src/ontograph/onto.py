@@ -93,6 +93,7 @@ class OntoDB:
         entity_type: str,
         attributes: dict | None = None,
         aliases: list[dict] | None = None,
+        file_refs: list[str] | None = None,
     ) -> Entity:
         """Manually add an entity to the graph.
 
@@ -101,10 +102,16 @@ class OntoDB:
             entity_type: Type (e.g., 'person', 'project')
             attributes: Optional key-value attributes
             aliases: Optional list of {"alias": str, "type": str} dicts
+            file_refs: Optional list of absolute file paths to associated files
         """
         from ontograph.llm import embed
 
-        entity = Entity(name=name, entity_type=entity_type, attributes=attributes or {})
+        entity = Entity(
+            name=name,
+            entity_type=entity_type,
+            attributes=attributes or {},
+            file_refs=file_refs or [],
+        )
         embedding = embed(f"{entity_type}: {name}")
         self._db.insert_entity(entity, embedding=embedding)
 
@@ -118,6 +125,38 @@ class OntoDB:
                 self._db.insert_alias(alias)
 
         return entity
+
+    def attach_files(self, entity: str, file_paths: list[str]) -> Entity:
+        """Attach file references to an existing entity.
+
+        Appends to any existing file_refs without duplicating paths.
+
+        Args:
+            entity: Entity name or ID
+            file_paths: Absolute file paths to attach
+        """
+        e = self.get_entity(entity)
+        if e is None:
+            raise ValueError(f"Entity not found: {entity}")
+        merged = e.file_refs + [p for p in file_paths if p not in e.file_refs]
+        self._db.update_entity_file_refs(e.id, merged)
+        e.file_refs = merged
+        return e
+
+    def detach_files(self, entity: str, file_paths: list[str]) -> Entity:
+        """Remove specific file references from an entity.
+
+        Args:
+            entity: Entity name or ID
+            file_paths: File paths to remove
+        """
+        e = self.get_entity(entity)
+        if e is None:
+            raise ValueError(f"Entity not found: {entity}")
+        remaining = [p for p in e.file_refs if p not in file_paths]
+        self._db.update_entity_file_refs(e.id, remaining)
+        e.file_refs = remaining
+        return e
 
     def get_entity(self, name_or_id: str) -> Entity | None:
         """Get an entity by name or ID."""

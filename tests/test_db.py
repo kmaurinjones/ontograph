@@ -194,3 +194,33 @@ def test_resolution_log(db: GraphDB):
     db.log_resolution("Sal", None, 0.65)
     accuracy = db.get_resolution_accuracy()
     assert accuracy["total"] == 0  # no reviewed entries yet
+
+
+def test_entity_file_refs(db: GraphDB):
+    e = Entity(
+        name="receipt",
+        entity_type="document",
+        file_refs=["/abs/path/receipt.pdf"],
+    )
+    db.insert_entity(e)
+    got = db.get_entity(e.id)
+    assert got is not None
+    assert got.file_refs == ["/abs/path/receipt.pdf"]
+
+
+def test_entity_file_refs_default_empty(db: GraphDB):
+    e = Entity(name="plain", entity_type="thing")
+    db.insert_entity(e)
+    got = db.get_entity(e.id)
+    assert got is not None
+    assert got.file_refs == []
+
+
+def test_update_entity_file_refs(db: GraphDB):
+    e = Entity(name="doc", entity_type="document")
+    db.insert_entity(e)
+
+    db.update_entity_file_refs(e.id, ["/path/a.pdf", "/path/b.png"])
+    got = db.get_entity(e.id)
+    assert got is not None
+    assert got.file_refs == ["/path/a.pdf", "/path/b.png"]

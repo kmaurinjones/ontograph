@@ -190,6 +190,8 @@ def search_and_answer(
         part = f"Entity: {entity.name} (type: {entity.entity_type})"
         if entity.attributes:
             part += f"\n  Attributes: {entity.attributes}"
+        if entity.file_refs:
+            part += f"\n  Referenced files: {entity.file_refs}"
 
         rel_descriptions = []
         for rel in r["relationships"]:

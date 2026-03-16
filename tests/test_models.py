@@ -19,6 +19,24 @@ def test_entity_roundtrip():
     assert restored.id == e.id
 
 
+def test_entity_file_refs_roundtrip():
+    e = Entity(
+        name="receipt", entity_type="document",
+        file_refs=["/Users/me/receipts/laptop.pdf", "/Users/me/photos/laptop.jpg"],
+    )
+    row = e.to_row()
+    restored = Entity.from_row(row)
+    assert restored.file_refs == ["/Users/me/receipts/laptop.pdf", "/Users/me/photos/laptop.jpg"]
+    assert restored.name == "receipt"
+
+
+def test_entity_empty_file_refs_roundtrip():
+    e = Entity(name="plain", entity_type="thing")
+    row = e.to_row()
+    restored = Entity.from_row(row)
+    assert restored.file_refs == []
+
+
 def test_relationship_roundtrip():
     r = Relationship(
         source_id="abc", target_id="def",

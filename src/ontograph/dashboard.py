@@ -820,6 +820,18 @@ function renderSidebar(node) {
     html += `</div>`;
   }
 
+  const fileRefs = node.file_refs || [];
+  if (fileRefs.length > 0) {
+    html += `<div><h3>File References (${fileRefs.length})</h3>`;
+    for (const ref of fileRefs) {
+      const fname = ref.split('/').pop();
+      html += `<div class="detail-row">
+        <span class="value" style="font-size:12px;font-family:monospace;text-align:left;max-width:100%;word-break:break-all" title="${escHtml(ref)}">${escHtml(fname)}</span>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
   if (rels.length > 0) {
     html += `<div><h3>Relationships (${rels.length})</h3>`;
     for (const l of rels) {
