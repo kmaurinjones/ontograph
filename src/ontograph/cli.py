@@ -276,6 +276,18 @@ def cmd_add_alias(args: argparse.Namespace) -> None:
         _print_json(alias)
 
 
+def cmd_dashboard(args: argparse.Namespace) -> None:
+    """Launch the interactive knowledge graph dashboard in the browser."""
+    from ontograph.dashboard import serve
+
+    serve(
+        db_path=args.db,
+        host=args.host,
+        port=args.port,
+        open_browser=not args.no_browser,
+    )
+
+
 def cmd_schema_register(args: argparse.Namespace) -> None:
     """Register an ontology schema from a JSON definition.
 
@@ -950,6 +962,49 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_schema_get.add_argument("name", help="Schema name to look up.")
     p_schema_get.set_defaults(func=cmd_schema_get)
+
+    # ── dashboard ──
+    p_dash = subparsers.add_parser(
+        "dashboard",
+        help="Launch interactive graph visualization in the browser.",
+        description=(
+            "Start a local web server that serves an interactive knowledge graph\n"
+            "dashboard. Opens automatically in your default browser.\n\n"
+            "The dashboard starts by showing the most-connected entity (hub) with\n"
+            "its top 50 relationships. Click nodes to select them, double-click to\n"
+            "expand their connections on demand. This lazy-loading approach prevents\n"
+            "memory issues with large graphs.\n\n"
+            "No OPENAI_API_KEY required (read-only visualization)."
+        ),
+        epilog=(
+            "examples:\n"
+            "  ontograph dashboard\n"
+            "  ontograph dashboard --port 9000\n"
+            "  ontograph --db project.db dashboard\n"
+            "  ontograph dashboard --no-browser\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_dash.add_argument(
+        "--port",
+        "-p",
+        type=int,
+        default=8484,
+        metavar="PORT",
+        help="Port to serve on. (default: 8484)",
+    )
+    p_dash.add_argument(
+        "--host",
+        default="127.0.0.1",
+        metavar="HOST",
+        help="Host to bind to. (default: 127.0.0.1)",
+    )
+    p_dash.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Don't open browser automatically.",
+    )
+    p_dash.set_defaults(func=cmd_dashboard)
 
     return parser
 

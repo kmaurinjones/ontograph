@@ -1,6 +1,6 @@
 [project]
 name = "ontograph"
-version = "0.1.1"
+version = "0.2.0"
 description = "LLM-powered knowledge graph engine with ontological entity resolution, orbit-based proximity scoring, and hybrid semantic-graph retrieval."
 readme = "README.md"
 requires-python = ">=3.14"
@@ -33,6 +33,9 @@ packages = ["src/ontograph"]
 [tool.ruff]
 target-version = "py314"
 line-length = 100
+
+[tool.ruff.lint.per-file-ignores]
+"src/ontograph/dashboard.py" = ["E501"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
