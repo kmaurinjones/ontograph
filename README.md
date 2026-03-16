@@ -1,23 +1,35 @@
-# ontograph
+<p align="center">
+  <img src="assets/logo-dark.svg" alt="ontograph logo" width="160" height="160">
+</p>
 
-LLM-powered knowledge graph engine with ontological entity resolution, orbit-based proximity scoring, and hybrid semantic-graph retrieval.
+<h1 align="center">ontograph</h1>
+
+<p align="center">
+  <strong>LLM-powered knowledge graph engine</strong><br>
+  Ontological entity resolution &middot; Orbit-based proximity scoring &middot; Hybrid semantic-graph retrieval
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/ontograph/"><img src="https://img.shields.io/pypi/v/ontograph?color=%235858ff&label=pypi" alt="PyPI"></a>
+  <a href="https://pypi.org/project/ontograph/"><img src="https://img.shields.io/pypi/pyversions/ontograph?color=%233fb950" alt="Python"></a>
+  <a href="https://github.com/kmaurinjones/ontograph/blob/main/LICENSE"><img src="https://img.shields.io/github/license/kmaurinjones/ontograph?color=%23d2a8ff" alt="License"></a>
+</p>
+
+---
 
 ## Install
 
 ```bash
 pip install ontograph
-# or from source:
-uv add .
 ```
 
-Requires `OPENAI_API_KEY` environment variable.
+Requires `OPENAI_API_KEY` environment variable (or set it in a `.env` file — loaded automatically).
 
 ## Quick Start
 
 ```python
 from ontograph import OntoDB, Schema
 
-# Initialize — creates a local SQLite database
 db = OntoDB("my_knowledge.db")
 
 # Define an ontology schema (constrains what the LLM extracts)
@@ -29,7 +41,6 @@ db.register_schema(Schema(
         {"name": "manages", "directed": True},
         {"name": "colleague", "directed": False},
         {"name": "discussed", "directed": True},
-        {"name": "member_of", "directed": True},
     ],
 ))
 
@@ -52,29 +63,38 @@ print(answer)
 ## Core Concepts
 
 ### Entities, Relationships, Attributes
-Everything decomposes into these three primitives:
-- **Entities**: nodes — people, projects, topics, anything nameable
-- **Relationships**: edges — directed (`A → B`) or bidirectional (`A ↔ B`)
-- **Attributes**: key-value metadata on entities and relationships
+
+Everything decomposes into three primitives:
+
+| Primitive | Description |
+|---|---|
+| **Entities** | Nodes — people, projects, topics, anything nameable |
+| **Relationships** | Edges — directed (`A → B`) or bidirectional (`A ↔ B`) |
+| **Attributes** | Key-value metadata on entities and relationships |
 
 ### Entity Resolution
-When ingesting text, names are fuzzy-matched against existing entities using a composite score:
-- **Phonetic similarity** (Metaphone) — catches pronunciation-similar names
-- **Spelling similarity** (Jaro-Winkler) — catches typos
-- **Semantic similarity** (embedding cosine) — catches conceptual matches
-- **Orbit proximity** — weights by interaction frequency
+
+When ingesting text, names are fuzzy-matched against existing entities using a four-signal composite score:
+
+| Signal | Method | Catches |
+|---|---|---|
+| Phonetic | Metaphone | Pronunciation-similar names |
+| Spelling | Jaro-Winkler | Typos and minor variations |
+| Semantic | Embedding cosine | Conceptual matches |
+| Orbit | Interaction frequency | Context-aware disambiguation |
 
 ### Orbit
-Your "orbit" is a proximity model. Entities you interact with frequently score higher. This powers entity resolution — when "Sal" appears in a transcript, the system weights your manager "Sam" (who you interact with daily) over random "Sal"s elsewhere.
+
+Your "orbit" is a proximity model. Entities you interact with frequently score higher — when "Sal" appears in a transcript, the system weights your manager "Sam" (who you interact with daily) over random "Sal"s elsewhere.
 
 ```python
-# Add a known transcription error alias
 sam = db.get_entity("Sam")
 db.add_alias(sam.id, "Sal", alias_type="transcript_error")
 ```
 
 ### File References
-Entities can reference external files — receipts, photos, PDFs, contracts — that live on disk rather than in the database. These references are surfaced during search and Q&A so the LLM knows where to find supporting material.
+
+Entities can reference external files — receipts, photos, PDFs, contracts — that live on disk. These references are surfaced during search and Q&A so the LLM knows where to find supporting material.
 
 ```python
 # Attach files to an entity
@@ -83,20 +103,21 @@ db.attach_files("kitchen renovation", [
     "/Users/me/photos/kitchen_after.jpg",
 ])
 
-# Or via CLI
-# ontograph attach "kitchen renovation" /Users/me/photos/kitchen_before.jpg
-```
-
-```python
 # When you ask a question, the LLM sees the file references
 answer = db.ask("What photos do we have of the kitchen?")
-# → "There are two referenced photos: kitchen_before.jpg and kitchen_after.jpg at /Users/me/photos/"
+```
+
+```bash
+# Or via CLI
+ontograph attach "kitchen renovation" /Users/me/photos/kitchen_before.jpg
 ```
 
 ### Schemas
-Ontology schemas define valid entity and relationship types for a domain. They constrain what the LLM extracts.
+
+Ontology schemas define valid entity and relationship types for a domain. They constrain what the LLM can extract during ingestion.
 
 ### Self-Improving Feedback Loop
+
 Every entity resolution is logged. Mark resolutions as correct/incorrect to track accuracy over time:
 
 ```python
@@ -104,41 +125,50 @@ db.mark_resolution("log_id", correct=True)
 print(db.stats()["resolution_accuracy"])
 ```
 
-## API
+## Python API
 
-- `OntoDB(db_path, api_key=None, observer_id=None)` — Main entry point
-- `.ingest(text, source_type, schema_name, observer_id, metadata) → dict` — Ingest unstructured text
-- `.search(query, limit, graph_depth) → list[dict]` — Hybrid search
-- `.ask(question) → str` — LLM-synthesized answer from graph context
-- `.add_entity(name, entity_type, attributes, aliases, file_refs) → Entity` — Manual entity creation
-- `.add_relationship(source, target, type, directed) → Relationship` — Manual relationship creation
-- `.attach_files(entity, file_paths) → Entity` — Attach file references to an entity
-- `.detach_files(entity, file_paths) → Entity` — Remove file references from an entity
-- `.resolve(name, entity_type, observer) → (Entity | None, float)` — Entity resolution
-- `.orbit(observer, limit) → list[dict]` — Proximity-ranked entities
-- `.stats() → dict` — Graph statistics and resolution accuracy
+| Method | Description |
+|---|---|
+| `OntoDB(db_path, api_key, observer_id)` | Main entry point |
+| `.ingest(text, source_type, schema_name)` | Ingest unstructured text |
+| `.search(query, limit, graph_depth)` | Hybrid search |
+| `.ask(question)` | LLM-synthesized answer from graph context |
+| `.add_entity(name, type, attributes, file_refs)` | Manual entity creation |
+| `.add_relationship(source, target, type)` | Manual relationship creation |
+| `.attach_files(entity, file_paths)` | Attach file references |
+| `.detach_files(entity, file_paths)` | Remove file references |
+| `.resolve(name, entity_type, observer)` | Entity resolution |
+| `.orbit(observer, limit)` | Proximity-ranked entities |
+| `.stats()` | Graph statistics and resolution accuracy |
 
 ## CLI
 
 ```bash
-ontograph --help                  # Full command list
-ontograph ingest --text "..."     # Ingest text
-ontograph search "query"          # Hybrid search
-ontograph ask "question"          # LLM-synthesized answer
-ontograph entities                # List entities
-ontograph attach "entity" file.pdf  # Attach files to entity
+ontograph --help                    # Full command list with examples
+ontograph ingest --text "..."       # Ingest text (also accepts --file or stdin)
+ontograph search "query"            # Hybrid search
+ontograph ask "question"            # LLM-synthesized answer
+ontograph entities [--type person]  # List entities
+ontograph entity "name"             # Get single entity
+ontograph relationships "name"      # Get relationships
+ontograph neighbors "name"          # Graph traversal
+ontograph resolve "name"            # Entity resolution
+ontograph attach "entity" file.pdf  # Attach file references
 ontograph detach "entity" file.pdf  # Remove file references
-ontograph dashboard               # Interactive graph visualization
+ontograph schema register --file s.json  # Register ontology schema
+ontograph dashboard                 # Interactive graph visualization
 ```
 
 ## Dashboard
 
 ```bash
-ontograph dashboard               # Opens browser at http://127.0.0.1:8484
-ontograph dashboard --port 9000   # Custom port
+ontograph dashboard                 # Opens browser at http://127.0.0.1:8484
+ontograph dashboard --port 9000    # Custom port
 ontograph --db project.db dashboard
 ```
 
-Interactive force-directed graph visualization. Starts with the most-connected
-entity as hub. Click to select, double-click to expand, drag to reposition,
-scroll to zoom.
+Interactive force-directed graph visualization powered by D3.js. Starts with the most-connected entity as hub, showing its top 50 relationships. Click to select, double-click to expand connections on demand, drag to reposition, scroll to zoom.
+
+## License
+
+MIT

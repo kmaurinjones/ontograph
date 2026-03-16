@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad-tl" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3EB2EF"/>
+      <stop offset="100%" stop-color="#58a6ff"/>
+    </linearGradient>
+    <linearGradient id="grad-l" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#688DDD"/>
+    </linearGradient>
+    <linearGradient id="grad-bl" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#486BF2"/>
+      <stop offset="100%" stop-color="#9375E6"/>
+    </linearGradient>
+    <linearGradient id="grad-center" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9375E6"/>
+      <stop offset="100%" stop-color="#B06DE0"/>
+    </linearGradient>
+    <linearGradient id="grad-tr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8B7DDC"/>
+      <stop offset="100%" stop-color="#9375E6"/>
+    </linearGradient>
+    <linearGradient id="grad-r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D165DA"/>
+      <stop offset="100%" stop-color="#C050D8"/>
+    </linearGradient>
+    <linearGradient id="grad-br" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#BE3DE9"/>
+      <stop offset="100%" stop-color="#D050E0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="512" height="512" rx="32" fill="#0d1117"/>
+
+  <!-- Edges -->
+  <g stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.7">
+    <line x1="175" y1="145" x2="265" y2="265" stroke="#6080CC"/>
+    <line x1="175" y1="145" x2="130" y2="265" stroke="#5888CC"/>
+    <line x1="175" y1="145" x2="310" y2="170" stroke="#7080CC"/>
+    <line x1="130" y1="265" x2="265" y2="265" stroke="#6878CC"/>
+    <line x1="130" y1="265" x2="195" y2="360" stroke="#5870D0"/>
+    <line x1="265" y1="265" x2="310" y2="170" stroke="#8070CC"/>
+    <line x1="265" y1="265" x2="345" y2="285" stroke="#9068CC"/>
+    <line x1="265" y1="265" x2="195" y2="360" stroke="#7868CC"/>
+    <line x1="310" y1="170" x2="345" y2="285" stroke="#9570CC"/>
+    <line x1="345" y1="285" x2="340" y2="380" stroke="#B050D0"/>
+    <line x1="195" y1="360" x2="340" y2="380" stroke="#A050D8"/>
+  </g>
+
+  <!-- Nodes -->
+  <circle cx="175" cy="145" r="30" fill="url(#grad-tl)"/>
+  <circle cx="130" cy="265" r="24" fill="url(#grad-l)"/>
+  <circle cx="195" cy="360" r="28" fill="url(#grad-bl)"/>
+  <circle cx="265" cy="265" r="32" fill="url(#grad-center)"/>
+  <circle cx="310" cy="170" r="22" fill="url(#grad-tr)"/>
+  <circle cx="345" cy="285" r="20" fill="url(#grad-r)"/>
+  <circle cx="340" cy="380" r="30" fill="url(#grad-br)"/>
+</svg>
