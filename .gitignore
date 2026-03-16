@@ -12,3 +12,10 @@ build/
 .DS_Store
 _garbage/
 SCRATCH.md
+
+code-reviews/
+.claude/
+.codex/
+.agents/
+agents/
+design/
