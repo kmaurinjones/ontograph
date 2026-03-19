@@ -11,6 +11,7 @@ Entity resolution prevents duplicates. Orbit tracking records interactions.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 
 from ontograph.db import GraphDB
 from ontograph.llm import embed, llm_call_json
@@ -23,10 +24,20 @@ from unstructured text. Return ONLY valid JSON, no markdown fences.
 
 You must decompose the text into the smallest meaningful units:
 - Entities: people, organizations, projects, topics, locations, events, etc.
+- Decisions: any choices made or commitments stated ("decided to X", "chose Y over Z")
+- Goals: objectives, targets, milestones ("reach X by Y", "ship Z by date")
+- Insights: learned facts, realizations, discoveries ("found that X", "realized Y")
+- Sessions: references to meetings, conversations, or work sessions
 - Relationships: how entities connect (with direction)
 - Attributes: properties of entities mentioned in the text
 
-Be exhaustive — capture every entity and relationship mentioned or implied.
+For each entity, also extract these enriched attributes when present:
+- status: "active", "completed", "abandoned", or "paused"
+- confidence: 0.0–1.0 indicating how certain the extraction is
+- temporal: any time reference ("2026-Q3", "by July 2026", "this week")
+- source_project: the project name this entity relates to
+
+Be exhaustive — extract every entity, decision, goal, insight, and relationship.
 Be precise — use exact names as they appear in the text.
 Be conservative — only extract what is explicitly stated or strongly implied."""
 
@@ -43,6 +54,17 @@ If an entity or relationship doesn't fit these types, use the closest match or s
 
     return f"""{type_constraint}
 Extract all entities and relationships from the following text.
+Pay special attention to:
+- Any decision made or commitment stated
+- Any goal, objective, target, or milestone discussed
+- Any insight, learned fact, or realization mentioned
+- Which project each entity relates to
+
+For entity attributes, include when present:
+- "status": one of "active", "completed", "abandoned", "paused"
+- "confidence": 0.0–1.0 (how certain you are about this extraction)
+- "temporal": any time reference associated with this entity (e.g. "2026-Q3", "by July 2026")
+- "source_project": the project name this entity relates to
 
 Return JSON in this exact format:
 {{
@@ -68,6 +90,11 @@ TEXT:
 {text}"""
 
 
+def _utc_now_iso() -> str:
+    """Return current UTC time as ISO string."""
+    return datetime.now(timezone.utc).isoformat()
+
+
 def ingest(
     db: GraphDB,
     text: str,
@@ -75,6 +102,7 @@ def ingest(
     schema_name: str | None = None,
     observer_id: str | None = None,
     metadata: dict | None = None,
+    session_id: str | None = None,
 ) -> dict:
     """Ingest unstructured text into the knowledge graph.
 
@@ -84,7 +112,7 @@ def ingest(
     2. LLM extracts entities and relationships
     3. Entity resolution prevents duplicates
     4. New entities get embeddings
-    5. Relationships are created
+    5. Relationships are created (with provenance metadata if session_id provided)
     6. Orbit tracking records interactions
 
     Args:
@@ -94,6 +122,9 @@ def ingest(
         schema_name: Optional ontology schema to constrain extraction
         observer_id: Entity ID of the observer (for orbit tracking)
         metadata: Optional metadata dict for the source document
+        session_id: Optional session ID for provenance tracking. When provided,
+            all entities and relationships created during this ingestion are
+            stamped with source_session_id and extracted_at.
 
     Returns:
         Summary dict with counts of entities and relationships created/resolved.
@@ -122,12 +153,18 @@ def ingest(
     entity_map: dict[str, str] = {}  # name -> entity_id
     entities_created = 0
     entities_resolved = 0
+    extracted_at = _utc_now_iso()
 
     for raw_entity in extracted["entities"]:
         entity_name = raw_entity["name"]
         entity_type = raw_entity["type"]
         attributes = raw_entity.get("attributes", {})
         attributes["_source_doc_id"] = doc.id
+
+        # Provenance metadata
+        if session_id is not None:
+            attributes["source_session_id"] = session_id
+            attributes["extracted_at"] = extracted_at
 
         entity, was_created = resolve_or_create(
             db,
@@ -164,6 +201,11 @@ def ingest(
         rel_attrs = raw_rel.get("attributes", {})
         rel_attrs["_source_doc_id"] = doc.id
 
+        # Provenance metadata
+        if session_id is not None:
+            rel_attrs["source_session_id"] = session_id
+            rel_attrs["extracted_at"] = extracted_at
+
         # Skip if relationship already exists
         if db.relationship_exists(source_id, target_id, rel_type):
             relationships_skipped += 1
@@ -186,6 +228,7 @@ def ingest(
 
     return {
         "document_id": doc.id,
+        "session_id": session_id,
         "entities_created": entities_created,
         "entities_resolved": entities_resolved,
         "relationships_created": relationships_created,
@@ -200,6 +243,7 @@ def ingest_batch(
     texts: list[dict],
     schema_name: str | None = None,
     observer_id: str | None = None,
+    session_id: str | None = None,
 ) -> list[dict]:
     """Ingest multiple texts.
 
@@ -216,6 +260,7 @@ def ingest_batch(
             schema_name=schema_name,
             observer_id=observer_id,
             metadata=item.get("metadata"),
+            session_id=session_id,
         )
         results.append(result)
     return results

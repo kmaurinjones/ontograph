@@ -13,7 +13,6 @@ build/
 _garbage/
 SCRATCH.md
 
-.claude/
 code-reviews/
 .codex/
 .agents/

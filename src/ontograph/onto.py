@@ -252,24 +252,29 @@ class OntoDB:
         schema_name: str | None = None,
         observer_id: str | None = None,
         metadata: dict | None = None,
+        session_id: str | None = None,
     ) -> dict:
         """Ingest unstructured text into the knowledge graph.
 
         The LLM extracts entities and relationships, resolves them against
         existing graph data, and creates new nodes/edges as needed.
+
+        When session_id is provided, all entities and relationships created
+        are stamped with provenance metadata (source_session_id, extracted_at).
         """
         obs = observer_id or self._observer_id
-        return _ingest(self._db, text, source_type, schema_name, obs, metadata)
+        return _ingest(self._db, text, source_type, schema_name, obs, metadata, session_id)
 
     def ingest_batch(
         self,
         texts: list[dict],
         schema_name: str | None = None,
         observer_id: str | None = None,
+        session_id: str | None = None,
     ) -> list[dict]:
         """Ingest multiple texts. Each item: {"text": str, "source_type": str, "metadata": dict}."""
         obs = observer_id or self._observer_id
-        return _ingest_batch(self._db, texts, schema_name, obs)
+        return _ingest_batch(self._db, texts, schema_name, obs, session_id)
 
     # ── Search ──
 

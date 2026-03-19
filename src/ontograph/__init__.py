@@ -12,6 +12,8 @@ Usage:
 from ontograph.config import set_llm_provider
 from ontograph.models import Alias, Entity, OrbitEntry, Relationship, Schema
 from ontograph.onto import OntoDB
+from ontograph.schema_registry import EXPANDED_SCHEMA
+from ontograph.temporal import normalize_temporal
 
 __all__ = [
     "OntoDB",
@@ -21,6 +23,8 @@ __all__ = [
     "Schema",
     "OrbitEntry",
     "set_llm_provider",
+    "EXPANDED_SCHEMA",
+    "normalize_temporal",
 ]
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

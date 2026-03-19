@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-19
+
+### Added
+- Expanded schema with 4 new entity types: `decision`, `goal`, `insight`, `session`
+- 7 new directed relationship types: `decided_during`, `relates_to`, `blocks`, `blocked_by`, `supports`, `originated_in`, `updated_status`
+- Pre-built `EXPANDED_SCHEMA` constant with all standard + new types, registerable via `register_schema()`
+- `EXPANDED_ENTITY_TYPES` and `EXPANDED_RELATIONSHIP_TYPES` constants in `schema_registry` module
+- Temporal normalization utility (`normalize_temporal()`) — converts relative time references ("next quarter", "by July 2026", "Q3 2026", "this week") to ISO dates
+- Provenance metadata on ingestion — `session_id` parameter on `ingest()` stamps all entities and relationships with `source_session_id` and `extracted_at`
+- Enriched attributes pattern in LLM extraction prompt: `status`, `confidence`, `temporal`, `source_project`
+- `EXPANDED_SCHEMA` and `normalize_temporal` exported from package root
+- 34 new tests across temporal normalization, expanded schema validation, and ingest provenance
+
+### Changed
+- LLM extraction prompt now explicitly asks for decisions, goals, insights, and sessions
+- `ingest()` and `ingest_batch()` accept optional `session_id` parameter
+- Ingest return dict includes `session_id` field
+
 ## [0.4.0] - 2026-03-19
 
 ### Added

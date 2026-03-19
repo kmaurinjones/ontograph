@@ -1,6 +1,6 @@
 [project]
 name = "ontograph"
-version = "0.4.0"
+version = "0.5.0"
 description = "LLM-powered knowledge graph engine with ontological entity resolution, orbit-based proximity scoring, and hybrid semantic-graph retrieval."
 readme = "README.md"
 requires-python = ">=3.14"
