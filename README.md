@@ -23,7 +23,9 @@
 pip install ontograph
 ```
 
-Requires `OPENAI_API_KEY` environment variable (or set it in a `.env` file — loaded automatically).
+Requires `OPENAI_API_KEY` environment variable (used for embeddings regardless of LLM provider).
+
+Optionally set `GEMINI_API_KEY` if using Google Gemini as the LLM provider.
 
 ## Quick Start
 
@@ -59,6 +61,62 @@ results = db.search("What is Nara working on?")
 answer = db.ask("Who is concerned about the launch deadline?")
 print(answer)
 ```
+
+### Using the Expanded Schema
+
+For richer extraction (decisions, goals, insights, sessions), use the pre-built expanded schema:
+
+```python
+from ontograph import OntoDB, EXPANDED_SCHEMA
+
+db = OntoDB("my_knowledge.db")
+db.register_schema(EXPANDED_SCHEMA)
+
+# Extracts decisions, goals, insights alongside standard entities
+# session_id stamps all extracted data with provenance metadata
+db.ingest(
+    "We decided to delay the house purchase until Q3. "
+    "Goal is to reach $100k in savings by July 2026.",
+    schema_name="expanded",
+    session_id="session-2026-03-19",
+)
+```
+
+The expanded schema includes entity types: `person`, `project`, `organization`, `topic`, `event`, `location`, `decision`, `goal`, `insight`, `session` — and relationship types: `works_on`, `belongs_to`, `collaborates_with`, `located_in`, `mentioned_in`, `decided_during`, `originated_in`, `updated_status`, `relates_to`, `blocks`, `blocked_by`, `supports`.
+
+### Temporal Normalization
+
+Convert relative time references to ISO dates:
+
+```python
+from ontograph import normalize_temporal
+
+normalize_temporal("Q3 2026")           # "2026-07-01"
+normalize_temporal("by July 2026")      # "2026-07-31"
+normalize_temporal("next quarter")      # first day of next quarter
+normalize_temporal("this week")         # Monday of current week
+```
+
+### LLM Provider Configuration
+
+Use OpenAI (default) or Google Gemini for LLM generation. Embeddings always use OpenAI.
+
+```python
+from ontograph import OntoDB, set_llm_provider
+
+# Option 1: Constructor
+db = OntoDB("my.db", llm_provider="google", google_api_key="...")
+
+# Option 2: Runtime setter
+set_llm_provider("google")
+
+# Option 3: Environment variable
+# ONTOGRAPH_LLM_PROVIDER=google
+
+# Option 4: YAML config (~/.ontograph/config.yaml or .ontograph/config.yaml)
+```
+
+Config precedence: constructor kwargs > env vars > project YAML > user YAML > defaults.
 
 ## Core Concepts
 
@@ -114,7 +172,19 @@ ontograph attach "kitchen renovation" /Users/me/photos/kitchen_before.jpg
 
 ### Schemas
 
-Ontology schemas define valid entity and relationship types for a domain. They constrain what the LLM can extract during ingestion.
+Ontology schemas define valid entity and relationship types for a domain. They constrain what the LLM can extract during ingestion. Use `EXPANDED_SCHEMA` for a ready-made schema with decision/goal/insight/session types, or define your own with `Schema(...)`.
+
+### Provenance Tracking
+
+Pass `session_id` to `ingest()` to stamp all extracted entities and relationships with provenance metadata (`source_session_id`, `extracted_at`). This enables tracing what was extracted when and from which session.
+
+### Enriched Attributes
+
+The LLM extraction prompt asks for enriched attributes on entities when present:
+- `status` — "active", "completed", "abandoned", "paused"
+- `confidence` — 0.0–1.0 extraction certainty
+- `temporal` — time references ("2026-Q3", "by July 2026")
+- `source_project` — which project the entity relates to
 
 ### Self-Improving Feedback Loop
 
@@ -127,12 +197,17 @@ print(db.stats()["resolution_accuracy"])
 
 ## Python API
 
+### OntoDB
+
 | Method | Description |
 |---|---|
-| `OntoDB(db_path, api_key, observer_id)` | Main entry point |
-| `.ingest(text, source_type, schema_name)` | Ingest unstructured text |
+| `OntoDB(db_path, api_key, observer_id, llm_provider, llm_model, google_api_key)` | Main entry point |
+| `.ingest(text, source_type, schema_name, session_id)` | Ingest unstructured text with optional provenance |
+| `.ingest_batch(texts, schema_name, session_id)` | Batch ingest multiple texts |
 | `.search(query, limit, graph_depth)` | Hybrid search |
 | `.ask(question)` | LLM-synthesized answer from graph context |
+| `.ask_with_sources(question)` | Answer with source entities/relationships |
+| `.register_schema(schema)` | Register an ontology schema |
 | `.add_entity(name, type, attributes, file_refs)` | Manual entity creation |
 | `.add_relationship(source, target, type)` | Manual relationship creation |
 | `.attach_files(entity, file_paths)` | Attach file references |
@@ -140,6 +215,14 @@ print(db.stats()["resolution_accuracy"])
 | `.resolve(name, entity_type, observer)` | Entity resolution |
 | `.orbit(observer, limit)` | Proximity-ranked entities |
 | `.stats()` | Graph statistics and resolution accuracy |
+
+### Module-Level
+
+| Export | Description |
+|---|---|
+| `EXPANDED_SCHEMA` | Pre-built schema with decision/goal/insight/session types |
+| `normalize_temporal(text, reference_date)` | Convert relative time refs to ISO dates |
+| `set_llm_provider(provider)` | Set LLM provider ('openai' or 'google') |
 
 ## CLI
 
