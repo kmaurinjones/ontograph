@@ -75,10 +75,10 @@ db.register_schema(EXPANDED_SCHEMA)
 # Extracts decisions, goals, insights alongside standard entities
 # session_id stamps all extracted data with provenance metadata
 db.ingest(
-    "We decided to delay the house purchase until Q3. "
-    "Goal is to reach $100k in savings by July 2026.",
+    "Team decided to migrate from PostgreSQL to CockroachDB in Q3. "
+    "Goal is to complete the data migration by end of August.",
     schema_name="expanded",
-    session_id="session-2026-03-19",
+    session_id="session-001",
 )
 ```
 
