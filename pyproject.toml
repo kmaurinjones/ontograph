@@ -1,6 +1,6 @@
 [project]
 name = "ontograph"
-version = "0.3.0"
+version = "0.4.0"
 description = "LLM-powered knowledge graph engine with ontological entity resolution, orbit-based proximity scoring, and hybrid semantic-graph retrieval."
 readme = "README.md"
 requires-python = ">=3.14"
@@ -12,6 +12,8 @@ dependencies = [
     "jellyfish>=1.1.0",
     "pydantic>=2.10.0",
     "python-dotenv>=1.2.2",
+    "google-genai>=1.0.0",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

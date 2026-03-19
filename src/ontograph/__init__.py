@@ -9,6 +9,7 @@ Usage:
     answer = db.ask("Who is working on Project Neptune?")
 """
 
+from ontograph.config import set_llm_provider
 from ontograph.models import Alias, Entity, OrbitEntry, Relationship, Schema
 from ontograph.onto import OntoDB
 
@@ -19,6 +20,7 @@ __all__ = [
     "Alias",
     "Schema",
     "OrbitEntry",
+    "set_llm_provider",
 ]
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

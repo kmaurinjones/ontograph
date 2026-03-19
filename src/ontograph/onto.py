@@ -46,8 +46,15 @@ class OntoDB:
     Args:
         db_path: Path to the SQLite database file. Created if it doesn't exist.
         api_key: OpenAI API key. Falls back to OPENAI_API_KEY env var.
+            Required for embeddings regardless of LLM provider.
         observer_id: Default observer entity ID for orbit tracking.
             If not set, orbit tracking requires explicit observer_id per call.
+        llm_provider: LLM provider for generation calls ('openai' or 'google').
+            If None, falls through to config files / env vars / default ('openai').
+            Embeddings always use OpenAI regardless of this setting.
+        llm_model: Override the LLM model name. If None, uses provider default.
+        google_api_key: Google/Gemini API key. Falls back to GEMINI_API_KEY env var.
+            Required when llm_provider='google'.
     """
 
     def __init__(
@@ -55,9 +62,22 @@ class OntoDB:
         db_path: str | Path = "ontograph.db",
         api_key: str | None = None,
         observer_id: str | None = None,
+        llm_provider: str | None = None,
+        llm_model: str | None = None,
+        google_api_key: str | None = None,
     ) -> None:
         if api_key:
             os.environ["OPENAI_API_KEY"] = api_key
+        if google_api_key:
+            os.environ["GEMINI_API_KEY"] = google_api_key
+
+        from ontograph.config import set_llm_model, set_llm_provider
+
+        if llm_provider is not None:
+            set_llm_provider(llm_provider)
+        if llm_model is not None:
+            set_llm_model(llm_model)
+
         self._db = GraphDB(db_path)
         self._observer_id = observer_id
 

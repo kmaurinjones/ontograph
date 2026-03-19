@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-19
+
+### Added
+- Google Gemini LLM support — use `gemini-2.5-flash-lite` (or any Gemini model) as an alternative to OpenAI for all LLM generation calls
+- YAML-based config system with 5-layer precedence: constructor kwargs > env vars > project config (`.ontograph/config.yaml`) > user config (`~/.ontograph/config.yaml`) > hardcoded defaults
+- `set_llm_provider()`, `set_llm_model()`, `set_embedding_model()`, `set_embedding_dimensions()` runtime config setters
+- `ONTOGRAPH_LLM_PROVIDER`, `ONTOGRAPH_LLM_MODEL`, `ONTOGRAPH_EMBEDDINGS_MODEL`, `ONTOGRAPH_EMBEDDINGS_DIMENSIONS` environment variable overrides
+- `llm_provider`, `llm_model`, `google_api_key` parameters on `OntoDB` constructor
+- `reload_configs()` to force re-read config files from disk
+- 26 new tests for config precedence, YAML loading, runtime overrides, env vars
+
+### Changed
+- `config.py` rewritten to support multi-source config resolution (was single-source env vars)
+- `llm.py` uses dynamic getter functions instead of imported constants for model/provider selection
+- Embeddings remain OpenAI-only regardless of LLM provider setting
+
 ## [0.3.0] - 2026-03-15
 
 ### Added

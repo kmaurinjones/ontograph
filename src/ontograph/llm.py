@@ -1,7 +1,12 @@
-"""OpenAI LLM and embedding clients.
+"""LLM and embedding clients for ontograph.
 
-Uses the Responses API for all LLM calls and text-embedding-3-small for embeddings.
-Default model: gpt-4o-mini (cost-efficient for high-volume operations).
+Supports two LLM providers:
+- OpenAI (default): Responses API with gpt-4o-mini
+- Google Gemini: google-genai SDK with gemini-2.5-flash-lite
+
+Embeddings always use OpenAI text-embedding-3-small (256-dim).
+
+Provider and model selection is controlled by config (see config.py).
 """
 
 from __future__ import annotations
@@ -11,7 +16,16 @@ import json
 import numpy as np
 from openai import OpenAI
 
-from ontograph.config import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL, LLM_MODEL, get_api_key
+from ontograph.config import (
+    get_api_key,
+    get_embedding_dimensions,
+    get_embedding_model,
+    get_google_api_key,
+    get_llm_model,
+    get_llm_provider,
+)
+
+# ── OpenAI client ──
 
 _client: OpenAI | None = None
 
@@ -29,13 +43,31 @@ def set_client(client: OpenAI) -> None:
     _client = client
 
 
+# ── Google Gemini client ──
+
+_google_client = None
+
+
+def _get_google_client():
+    """Lazy-init the Google genai client."""
+    global _google_client
+    if _google_client is None:
+        from google import genai
+
+        _google_client = genai.Client(api_key=get_google_api_key())
+    return _google_client
+
+
+# ── Embeddings (always OpenAI) ──
+
+
 def embed(text: str) -> list[float]:
-    """Embed a single text string using text-embedding-3-small."""
+    """Embed a single text string using the configured embedding model."""
     client = _get_client()
     response = client.embeddings.create(
-        model=EMBEDDING_MODEL,
+        model=get_embedding_model(),
         input=text,
-        dimensions=EMBEDDING_DIMENSIONS,
+        dimensions=get_embedding_dimensions(),
     )
     return response.data[0].embedding
 
@@ -46,12 +78,15 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
         return []
     client = _get_client()
     response = client.embeddings.create(
-        model=EMBEDDING_MODEL,
+        model=get_embedding_model(),
         input=texts,
-        dimensions=EMBEDDING_DIMENSIONS,
+        dimensions=get_embedding_dimensions(),
     )
     sorted_data = sorted(response.data, key=lambda d: d.index)
     return [d.embedding for d in sorted_data]
+
+
+# ── Similarity ──
 
 
 def cosine_similarity(a: list[float] | np.ndarray, b: list[float] | np.ndarray) -> float:
@@ -66,23 +101,61 @@ def cosine_similarity(a: list[float] | np.ndarray, b: list[float] | np.ndarray) 
     return float(dot / (norm_a * norm_b))
 
 
-def llm_call(prompt: str, system: str | None = None, model: str = LLM_MODEL) -> str:
-    """Make an LLM call via the OpenAI Responses API.
+# ── LLM calls (provider-dispatched) ──
 
-    Returns the raw text output from the model.
-    """
+
+def _openai_llm_call(prompt: str, system: str | None = None, model: str | None = None) -> str:
+    """LLM call via the OpenAI Responses API."""
     client = _get_client()
     instructions = system or "You are a precise knowledge extraction assistant."
     response = client.responses.create(
-        model=model,
+        model=model or get_llm_model(),
         instructions=instructions,
         input=prompt,
     )
     return response.output_text
 
 
+def _google_llm_call(prompt: str, system: str | None = None, model: str | None = None) -> str:
+    """LLM call via the Google Gemini SDK."""
+    from google.genai import types
+
+    client = _get_google_client()
+    instructions = system or "You are a precise knowledge extraction assistant."
+
+    contents = [
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=prompt)],
+        ),
+    ]
+    config = types.GenerateContentConfig(
+        system_instruction=instructions,
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
+    )
+
+    response = client.models.generate_content(
+        model=model or get_llm_model(),
+        contents=contents,
+        config=config,
+    )
+    return response.text
+
+
+def llm_call(prompt: str, system: str | None = None, model: str | None = None) -> str:
+    """Make an LLM call using the configured provider.
+
+    Routes to OpenAI or Google Gemini based on the current provider setting.
+    Returns the raw text output from the model.
+    """
+    provider = get_llm_provider()
+    if provider == "google":
+        return _google_llm_call(prompt, system=system, model=model)
+    return _openai_llm_call(prompt, system=system, model=model)
+
+
 def llm_call_json(
-    prompt: str, system: str | None = None, model: str = LLM_MODEL
+    prompt: str, system: str | None = None, model: str | None = None
 ) -> dict | list:
     """Make an LLM call and parse the response as JSON.
 
